@@ -1,19 +1,20 @@
-# This script installs several zsh plugins, and adjusts a few zsh settings.
-# It must be run as root and requires git and git-http to be installed.
 #!/bin/sh
+# This script installs several zsh plugins, and adjusts a few zsh settings.
+# Run it as root with git and git-http installed.
+
 set -eu
 PLUGIN_DIR=/usr/share/zsh/plugins
 CONFIG_DIR=/etc/zsh
 
 install_plugin() {
-	if [ "$#" -ne 1 ]; then
-    echo "Usage: install_plugin <repository-url>" >&2
+  if [ "$#" -ne 2 ]; then
+    echo "Usage: install_plugin <repository-url> <plugin-name>" >&2
     exit 1
   fi
 
   url=$1
-  name=${url##*/}
-  dest="$PLUGIN_DIR/${name%.git}"
+  name=$2
+  dest="$PLUGIN_DIR/$name"
 
   if [ -d "$dest/.git" ]; then
     git -C "$dest" pull --ff-only
@@ -26,27 +27,26 @@ install_plugin() {
 }
 
 mkdir -p "$PLUGIN_DIR"
-install_plugin https://github.com/zsh-users/zsh-completions
-install_plugin https://github.com/marlonrichert/zsh-autocomplete
-install_plugin https://github.com/zsh-users/zsh-autosuggestions
-install_plugin https://github.com/zsh-users/zsh-syntax-highlighting
-
+install_plugin https://github.com/zsh-users/zsh-completions zsh-completions
+install_plugin https://github.com/marlonrichert/zsh-autocomplete zsh-autocomplete
+install_plugin https://github.com/zsh-users/zsh-autosuggestions zsh-autosuggestions
+install_plugin https://github.com/zsh-users/zsh-syntax-highlighting zsh-syntax-highlighting
 
 mkdir -p "$CONFIG_DIR"
-cat > /etc/zsh/zshrc <<'EOF'
+cat > "$CONFIG_DIR/zshrc" <<EOF
 if [[ -o interactive ]]; then
   PROMPT='%n@%m:%~%# '
-  fpath=(/usr/share/zsh/plugins/zsh-completions/src $fpath)
+  fpath=("$PLUGIN_DIR/zsh-completions/src" \$fpath)
 
-  [[ -r /usr/share/zsh/plugins/zsh-autocomplete/zsh-autocomplete.plugin.zsh ]] &&
-    source /usr/share/zsh/plugins/zsh-autocomplete/zsh-autocomplete.plugin.zsh
+  [[ -r "$PLUGIN_DIR/zsh-autocomplete/zsh-autocomplete.plugin.zsh" ]] &&
+    source "$PLUGIN_DIR/zsh-autocomplete/zsh-autocomplete.plugin.zsh"
 
-  [[ -r /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh ]] &&
-    source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
+  [[ -r "$PLUGIN_DIR/zsh-autosuggestions/zsh-autosuggestions.zsh" ]] &&
+    source "$PLUGIN_DIR/zsh-autosuggestions/zsh-autosuggestions.zsh"
 
-  [[ -r /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]] &&
-    source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+  [[ -r "$PLUGIN_DIR/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ]] &&
+    source "$PLUGIN_DIR/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
 fi
 EOF
 
-echo "Zsh and plugins installed; shared config written to /etc/zsh/zshrc."
+echo "zsh plugins installed into $PLUGIN_DIR; shared config written to $CONFIG_DIR/zshrc."
